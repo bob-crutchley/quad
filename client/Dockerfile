@@ -3,8 +3,7 @@ WORKDIR /build
 COPY . .
 RUN npm install
 RUN npm run build
-FROM node:10
-WORKDIR /opt/website
+FROM nginx
+WORKDIR /app
 COPY --from=node-build /build/build .
-RUN npm install -g serve
-ENTRYPOINT ["/usr/local/bin/serve", "-l", "3000"]
+COPY nginx.conf /etc/nginx/nginx.conf

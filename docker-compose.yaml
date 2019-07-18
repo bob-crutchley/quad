@@ -1,44 +1,40 @@
 ---
 version: '3.7'
 services:
-    nginx:
-      container_name: nginx
-      image: nginx:latest
-      volumes:
-      - type: bind
-        source: ./nginx/nginx.conf
-        target: /etc/nginx/nginx.conf
-      ports:
-      - target: 80
-        published: 80
-        protocol: tcp
-      depends_on:
-        - client
-        - server
-    server:
-      image: bobcrutchley/quad-server:latest
-      build:
-        context: ./server
-        dockerfile: Dockerfile
     client:
       image: bobcrutchley/quad-client:latest
       build:
         context: ./client
-        dockerfile: Dockerfile
+      depends_on:
+        - server
+        - jenkins
+      ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+    server:
+      image: bobcrutchley/quad-server:latest
+      build:
+        context: ./server
+      depends_on:
+        - mongo
+    jenkins:
+      image: bobcrutchley/jenkins:latest
       environment:
-      - REACT_APP_SERVICE_HOST=${REACT_APP_SERVICE_HOST}
+        - JENKINS_OPTS="--prefix=/jenkins"
+      volumes:
+        - type: volume
+          source: jenkins-home
+          target: /var/jenkins_home
+        - type: bind
+          source: /var/run/docker.sock
+          target: /var/run/docker.sock
     mongo:
       image: mongo
-    mongo-seed:
-      image: fvilers/mongo-seed:1.0.0
-      environment:
-      - MONGO_HOST=mongo
-      - MONGO_PORT=27017
       volumes:
-      - ./data:/data
-      command:
-      - "mongoimport --host mongo --port 27017 --db test --mode upsert --type json --file /data/account.json --jsonArray"
-
-  
-...
-
+        - type: volume
+          source: mongo
+          target: /data/db
+volumes:
+  jenkins-home:
+  mongo:
